@@ -4,58 +4,44 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Scanner;
-import java.util.TreeMap;
+
 
 public class Main {
 
+	private static Queue<String> wordQueue = new LinkedList<String>();
+
 	public static void main(String[] args) {
 
-		Scanner sc = null;
-		ArrayList<String> bigList = new ArrayList<String>();
-		TreeMap<Pair, Integer> mapping = new TreeMap<Pair, Integer>();
+		ArrayList<ArrayList<String>> bigList = new ArrayList<ArrayList<String>>();
 
 		/**
 		 * Error handling
 		 */
 		if (args.length != 1) {
+			System.out.println("Wrong number of arguments!");
 			System.exit(1);
 		}
 		File dir = new File(args[0]);
 		if (!dir.exists() && !dir.isDirectory() && !dir.canRead() && !(dir.listFiles().length > 0)) {
+			System.out.println("The directory is invalid. It's either non-existent, requires file permission or empty!");
 			System.exit(1);
 		}
 
-		/**
-		 * Read in files
-		 */
-		File[] files = fileNameFilter(dir);
-//		for (File file : files) {
-			try {
-				sc = new Scanner(files[1]);
-				while (sc.hasNextLine()) {
-					String line = sc.nextLine();
-					String[] field = line.split("\t");
-					if (Character.isLetter(field[0].charAt(0)) && field.length == 3) {
-						String normalizedWord = field[1];
-						bigList.add(normalizedWord);
-//						System.out.print(normalizedWord + " ");
-					}
-					
+		handleFileIO(dir, bigList);
 
-				}
-			} catch (FileNotFoundException e) {
-				System.out.println("File Error!");
-				System.exit(1);
-			}
-//		}
-
-		String string = handleUserInput();
-		Predictor predictor = new Predictor(bigList);
-//		predictor.printResult();
+		handleUserInput(bigList);
 
 	}
 
+	/**
+	 * Helper method for reading all the files in a directory
+	 * 
+	 * @param dir
+	 * @return
+	 */
 	private static File[] fileNameFilter(File dir) {
 		File[] fileList = dir.listFiles(new FilenameFilter() {
 			@Override
@@ -65,37 +51,88 @@ public class Main {
 		});
 		return fileList;
 	}
-	
-	private static String handleUserInput() {
+
+	/**
+	 * Helper method for reading in files
+	 * 
+	 * @param dir
+	 * @param bigList
+	 */
+	private static void handleFileIO(File dir, ArrayList<ArrayList<String>> bigList) {
+
+		File[] files = fileNameFilter(dir);
+		Scanner sc = null;
+		for (File file : files) {
+			try {
+				sc = new Scanner(file);
+				ArrayList<String> smallList = new ArrayList<String>();
+				while (sc.hasNextLine()) {
+					String line = sc.nextLine();
+					String[] field = line.split("\t");
+					if (field.length < 3)
+						continue; // There are arrays with length 1
+					if (field[1].length() < 1)
+						continue; // There are strings with length 0
+					if (Character.isLetter(field[1].charAt(0))) {
+						String normalizedWord = field[1];
+						smallList.add(normalizedWord);
+					}
+				}
+				bigList.add(smallList);
+			} catch (FileNotFoundException e) {
+				System.out.println("File Error!");
+				System.exit(1);
+			}
+			sc.close();
+		}
+	}
+
+	/**
+	 * This handles user input
+	 * 
+	 * @param bigList
+	 */
+	private static void handleUserInput(ArrayList<ArrayList<String>> bigList) {
+
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Please enter a word: ");
 		String string = null;
-		while (sc.hasNext()) {
-			string = sc.next();
-			string = string.trim().split(" ")[0].toLowerCase();
-			boolean valid = checkInput(string);
-			if (!valid) {
+		Predictor predictor = new Predictor(bigList);
+		while (sc.hasNextLine()) {
+			string = sc.nextLine();
+			if (string.equals(".")) {
+				System.out.println("Goodbye!");
+				break;
+			}
+
+			if (string.isEmpty()) {
 				System.out.println("Please enter a word: ");
 				continue;
-			} else {
-				break;
 			}
+			System.out.println("Typed: " + string);
+			wordQueue.add(string.trim().split(" |,|\t")[0].toLowerCase());
+			String input = handleBigrams();
+			System.out.println("The word(s) => " + input);
+			predictor.printResult(input);
+			System.out.println("Please enter a word: ");
 		}
 		sc.close();
-		return string;
-		
 	}
-	
-	private static boolean checkInput(String string) {
-		boolean valid = true;
-		for (int i = 0; i < string.length(); i++) {
-			if (!Character.isLetter(string.charAt(i))) {
-				valid = false;
-				System.out.println("Invalid word! Do not include non-alphabets!");
-				break;
-			}
-		}
-		return valid;
+
+	/**
+	 * Helper method for handling user input so that the program always looks at
+	 * the most recently entered words
+	 * 
+	 * @return
+	 */
+	private static String handleBigrams() {
+		if (wordQueue.isEmpty())
+			return null;
+		if (wordQueue.size() < 2)
+			return wordQueue.peek();
+		String string1 = wordQueue.remove();
+		String string2 = wordQueue.peek();
+		return string1.concat(" ").concat(string2);
 	}
 
 }
