@@ -109,7 +109,6 @@ public class Main {
 				System.out.println("Please enter a word: ");
 				continue;
 			}
-			System.out.println("Typed: " + string);
 			wordQueue.add(string.trim().split(" |,|\t")[0].toLowerCase());
 			String input = handleBigrams();
 			System.out.println("The word(s) => " + input);
