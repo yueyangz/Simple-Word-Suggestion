@@ -38,7 +38,7 @@ public class Predictor {
 	 * specification, i.e. every word maps to the word that comes after it,
 	 * every two words map to the word that comes after them
 	 */
-	public void createMapping() {
+	private void createMapping() {
 
 		if (!(list.size() > 0)) {
 			System.out.println("No corpus available for creating the mapping!");
@@ -136,6 +136,7 @@ public class Predictor {
 			ArrayList<Entry<String, Integer>> suggestions) {
 		String word = string.split(" ")[1];	//extract the most recently entered word
 		ArrayList<Entry<String, Integer>> alternate = processing(word);	//get a list of predictions for this most recent word
+		if (alternate == null) return null;
 		alternate.removeIf(e -> {
 			for (Entry<String, Integer> f : suggestions) {	//if any of the suggestions overlap with existing suggestions, remove them
 				if (e.getKey().equals(f.getKey()))
@@ -155,12 +156,13 @@ public class Predictor {
 	 */
 	private ArrayList<Entry<String, Integer>> processing(String string) {
 		ArrayList<String> wordList = mapping.get(string);
+		ArrayList<Entry<String, Integer>> suggestions = new ArrayList<Entry<String, Integer>>();
+		if (string.split(" ").length == 1 && wordList == null) return null;
 		if (wordList == null) {
-			return null;
+			return suggestions = generateAlternate(string, suggestions);
 		}
 		ArrayList<Entry<String, Integer>> result = generateResult(wordList);
-		int size = (result.size() >= 3) ? 3 : result.size();	//determine the size of the final word list for the bigram	
-		ArrayList<Entry<String, Integer>> suggestions = new ArrayList<Entry<String, Integer>>();
+		int size = (result.size() > 3) ? 3 : result.size();	//determine the size of the final word list for the bigram	
 		for (int i = 0; i < size; i++) {
 			suggestions.add(result.get(i));
 		}
